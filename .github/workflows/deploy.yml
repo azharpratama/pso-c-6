@@ -32,6 +32,9 @@ jobs:
     needs: validate
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
     steps:
       - uses: actions/checkout@v4
 
@@ -60,10 +63,18 @@ jobs:
         run: |
           cp -r public .next/standalone/public
           cp -r .next/static .next/standalone/.next/static
+          echo '{"scripts":{"start":"node server.js"}}' > .next/standalone/package.json
+
+      - name: Login to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_F435ADE43AC74721A6249BC7723BF94A }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_4881942941B14996AE69A278D12B2CC3 }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_572F43C695DD433CBE7D5F99972A7059 }}
 
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
-          app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
-          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          app-name: "pso-c-6"
+          slot-name: "Production"
           package: .next/standalone
