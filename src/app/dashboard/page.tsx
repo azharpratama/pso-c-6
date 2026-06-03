@@ -37,7 +37,6 @@ type MitraFormData = {
 
 export default function DashboardPage() {
   const router = useRouter();
-  const [ready, setReady] = useState(false);
   const [mitra, setMitra] = useState<Mitra[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [activeCount, setActiveCount] = useState(0);
@@ -69,15 +68,6 @@ export default function DashboardPage() {
     setEditing(null);
     setActionError("");
   }, []);
-
-  useEffect(() => {
-    const session = localStorage.getItem("adminSession");
-    if (!session) {
-      router.replace("/");
-      return;
-    }
-    setReady(true);
-  }, [router]);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -111,12 +101,14 @@ export default function DashboardPage() {
   }, []);
 
   useEffect(() => {
-    if (!ready) {
+    const session = localStorage.getItem("adminSession");
+    if (!session) {
+      router.replace("/");
       return;
     }
-
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- loadData is async; setState occurs after await, not synchronously
     void loadData();
-  }, [ready, loadData]);
+  }, [router, loadData]);
 
   const filteredMitra = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
