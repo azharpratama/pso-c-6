@@ -52,7 +52,7 @@ export default function Home() {
           username: result.admin.username,
           email: result.admin.email,
           loginAt: Date.now(),
-        })
+        }),
       );
 
       router.push("/dashboard");
