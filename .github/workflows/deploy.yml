@@ -27,14 +27,11 @@ jobs:
 
       - run: npm run validate
 
-  build-and-deploy:
-    name: Build & Deploy
+  build:
+    name: Build
     needs: validate
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     runs-on: ubuntu-latest
-    permissions:
-      id-token: write
-      contents: read
     steps:
       - uses: actions/checkout@v4
 
@@ -45,36 +42,63 @@ jobs:
 
       - run: npm ci
 
-      - name: Cache Next.js build
-        uses: actions/cache@v4
-        with:
-          path: .next/cache
-          key: nextjs-${{ hashFiles('package-lock.json') }}-${{ hashFiles('src/**') }}
-          restore-keys: nextjs-${{ hashFiles('package-lock.json') }}-
-
       - name: Build
         run: npm run build
         env:
-          NODE_ENV: production
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
 
-      - name: Prepare standalone package
+      - name: Copy static and public assets
         run: |
           cp -r public .next/standalone/public
           cp -r .next/static .next/standalone/.next/static
-          echo '{"scripts":{"start":"node server.js"}}' > .next/standalone/package.json
 
-      - name: Login to Azure
-        uses: azure/login@v2
+      - name: Zip artifact
+        run: |
+          cd .next/standalone
+          zip -qr ../../release.zip .
+          cd ../..
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
         with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_F435ADE43AC74721A6249BC7723BF94A }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_4881942941B14996AE69A278D12B2CC3 }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_572F43C695DD433CBE7D5F99972A7059 }}
+          name: release
+          path: release.zip
+          retention-days: 7
+
+  deploy-staging:
+    name: Deploy to Staging
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: release
+
+      - name: Deploy to Azure Web App
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: "pso-c-6-staging"
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_STAGING }}
+          slot-name: "production"
+          package: release.zip
+
+  deploy-production:
+    name: Deploy to Production
+    needs: deploy-staging
+    environment: Production
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: release
 
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
           app-name: "pso-c-6"
-          slot-name: "Production"
-          package: .next/standalone
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_PRODUCTION }}
+          slot-name: "production"
+          package: release.zip
