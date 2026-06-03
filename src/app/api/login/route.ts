@@ -9,7 +9,7 @@ export async function POST(request: Request) {
   } catch {
     return NextResponse.json(
       { error: "Permintaan tidak valid." },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -19,7 +19,7 @@ export async function POST(request: Request) {
   if (!identifier || !password) {
     return NextResponse.json(
       { error: "Username/email dan password wajib diisi." },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -36,7 +36,7 @@ export async function POST(request: Request) {
     if (error || !data) {
       return NextResponse.json(
         { error: "Kredensial tidak valid." },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -44,7 +44,7 @@ export async function POST(request: Request) {
   } catch {
     return NextResponse.json(
       { error: "Gagal terhubung ke database." },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
