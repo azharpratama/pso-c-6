@@ -37,7 +37,6 @@ type MitraFormData = {
 
 export default function DashboardPage() {
   const router = useRouter();
-  const [ready, setReady] = useState(false);
   const [mitra, setMitra] = useState<Mitra[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [activeCount, setActiveCount] = useState(0);
@@ -69,15 +68,6 @@ export default function DashboardPage() {
     setEditing(null);
     setActionError("");
   }, []);
-
-  useEffect(() => {
-    const session = localStorage.getItem("adminSession");
-    if (!session) {
-      router.replace("/");
-      return;
-    }
-    setReady(true);
-  }, [router]);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -111,12 +101,14 @@ export default function DashboardPage() {
   }, []);
 
   useEffect(() => {
-    if (!ready) {
+    const session = localStorage.getItem("adminSession");
+    if (!session) {
+      router.replace("/");
       return;
     }
-
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- loadData is async; setState occurs after await, not synchronously
     void loadData();
-  }, [ready, loadData]);
+  }, [router, loadData]);
 
   const filteredMitra = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
@@ -187,7 +179,7 @@ export default function DashboardPage() {
           method: editing ? "PUT" : "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(formData),
-        }
+        },
       );
 
       const result = await response.json();
@@ -278,7 +270,11 @@ export default function DashboardPage() {
       <div className="dashboard-main">
         <div className="top-accent" />
         <header className="dashboard-topbar">
-          <button className="topbar-icon" type="button" aria-label="Notifications">
+          <button
+            className="topbar-icon"
+            type="button"
+            aria-label="Notifications"
+          >
             <BellIcon className="icon-sm" aria-hidden="true" />
           </button>
           <button className="topbar-icon" type="button" aria-label="Profile">
@@ -294,7 +290,11 @@ export default function DashboardPage() {
                 Kelola daftar instansi mitra magang untuk mahasiswa.
               </p>
             </div>
-            <button className="primary-btn" type="button" onClick={openAddModal}>
+            <button
+              className="primary-btn"
+              type="button"
+              onClick={openAddModal}
+            >
               + Tambah Mitra
             </button>
           </section>
@@ -358,7 +358,10 @@ export default function DashboardPage() {
                               onClick={() => openEditModal(item)}
                               disabled={saving || deletingId === item.id}
                             >
-                              <EditIcon className="icon-xs" aria-hidden="true" />
+                              <EditIcon
+                                className="icon-xs"
+                                aria-hidden="true"
+                              />
                             </button>
                             <button
                               className="action-btn delete"
@@ -367,7 +370,10 @@ export default function DashboardPage() {
                               onClick={() => handleDelete(item)}
                               disabled={deletingId === item.id}
                             >
-                              <TrashIcon className="icon-xs" aria-hidden="true" />
+                              <TrashIcon
+                                className="icon-xs"
+                                aria-hidden="true"
+                              />
                             </button>
                           </div>
                         </td>
@@ -380,7 +386,8 @@ export default function DashboardPage() {
 
             <div className="table-footer">
               <span>
-                Menampilkan {visibleEnd ? 1 : 0} hingga {visibleEnd} dari {displayTotal} entri
+                Menampilkan {visibleEnd ? 1 : 0} hingga {visibleEnd} dari{" "}
+                {displayTotal} entri
               </span>
               <div className="pagination">
                 <button className="page-btn" type="button" data-disabled="true">
@@ -578,7 +585,11 @@ export default function DashboardPage() {
                     >
                       Batal
                     </button>
-                    <button className="primary-btn" type="submit" disabled={saving}>
+                    <button
+                      className="primary-btn"
+                      type="submit"
+                      disabled={saving}
+                    >
                       {saving ? "Menyimpan..." : "Simpan"}
                     </button>
                   </div>

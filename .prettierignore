@@ -1,0 +1,12 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+.next/
+out/
+build/
+
+# Auto-generated
+package-lock.json
+next-env.d.ts
+*.tsbuildinfo
