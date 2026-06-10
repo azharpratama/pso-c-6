@@ -13,7 +13,7 @@ function getSupabaseConfig(): SupabaseConfig {
 
   if (!url || !key) {
     throw new Error(
-      "Supabase server configuration is missing. Check NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY."
+      "Supabase server configuration is missing. Check NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY.",
     );
   }
 

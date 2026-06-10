@@ -21,7 +21,7 @@ function normalizePayload(payload: MitraPayload) {
 
 export async function PUT(
   request: NextRequest,
-  context: { params: Promise<{ id: string }> }
+  context: { params: Promise<{ id: string }> },
 ) {
   let payload: MitraPayload | null = null;
 
@@ -30,7 +30,7 @@ export async function PUT(
   } catch {
     return NextResponse.json(
       { error: "Permintaan tidak valid." },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -44,7 +44,7 @@ export async function PUT(
   if (!normalized.nama_instansi) {
     return NextResponse.json(
       { error: "Nama instansi wajib diisi." },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -55,14 +55,14 @@ export async function PUT(
       .update(normalized)
       .eq("id", id)
       .select(
-        "id, nama_instansi, alamat, kota, keterangan, is_aktif, created_at"
+        "id, nama_instansi, alamat, kota, keterangan, is_aktif, created_at",
       )
       .single();
 
     if (error || !data) {
       return NextResponse.json(
         { error: "Gagal memperbarui mitra." },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -70,14 +70,14 @@ export async function PUT(
   } catch {
     return NextResponse.json(
       { error: "Gagal memperbarui mitra." },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
 
 export async function DELETE(
   _request: NextRequest,
-  context: { params: Promise<{ id: string }> }
+  context: { params: Promise<{ id: string }> },
 ) {
   const { id } = await context.params;
   if (!id) {
@@ -91,7 +91,7 @@ export async function DELETE(
     if (error) {
       return NextResponse.json(
         { error: "Gagal menghapus mitra." },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -99,7 +99,7 @@ export async function DELETE(
   } catch {
     return NextResponse.json(
       { error: "Gagal menghapus mitra." },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

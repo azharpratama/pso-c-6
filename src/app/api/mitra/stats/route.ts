@@ -23,7 +23,7 @@ export async function GET() {
     if (totalResult.error || activeResult.error || newResult.error) {
       return NextResponse.json(
         { error: "Tidak dapat memuat statistik." },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -35,7 +35,7 @@ export async function GET() {
   } catch {
     return NextResponse.json(
       { error: "Tidak dapat memuat statistik." },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

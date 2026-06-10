@@ -86,7 +86,12 @@ button:disabled,
   flex-direction: column;
   align-items: center;
   gap: 28px;
-  background: radial-gradient(circle at top, #ffffff 0%, #f3f6fb 55%, #edf2f8 100%);
+  background: radial-gradient(
+    circle at top,
+    #ffffff 0%,
+    #f3f6fb 55%,
+    #edf2f8 100%
+  );
 }
 
 .login-header {

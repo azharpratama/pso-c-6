@@ -29,15 +29,14 @@ export async function GET(request: Request) {
     const limitRaw = Number(limitParam ?? "5");
     const offsetRaw = Number(offsetParam ?? "0");
     const limit = Number.isFinite(limitRaw) && limitRaw > 0 ? limitRaw : 5;
-    const offset =
-      Number.isFinite(offsetRaw) && offsetRaw >= 0 ? offsetRaw : 0;
+    const offset = Number.isFinite(offsetRaw) && offsetRaw >= 0 ? offsetRaw : 0;
 
     const supabase = createSupabaseServerClient();
     let query = supabase
       .from("mitra")
       .select(
         "id, nama_instansi, alamat, kota, keterangan, is_aktif, created_at",
-        { count: "exact" }
+        { count: "exact" },
       )
       .order("created_at", { ascending: false })
       .range(offset, offset + limit - 1);
@@ -45,7 +44,7 @@ export async function GET(request: Request) {
     if (search) {
       const safeSearch = search.replace(/%/g, "\\%").replace(/_/g, "\\_");
       query = query.or(
-        `nama_instansi.ilike.%${safeSearch}%,alamat.ilike.%${safeSearch}%,kota.ilike.%${safeSearch}%,keterangan.ilike.%${safeSearch}%`
+        `nama_instansi.ilike.%${safeSearch}%,alamat.ilike.%${safeSearch}%,kota.ilike.%${safeSearch}%,keterangan.ilike.%${safeSearch}%`,
       );
     }
 
@@ -54,7 +53,7 @@ export async function GET(request: Request) {
     if (error) {
       return NextResponse.json(
         { error: "Tidak dapat memuat data mitra." },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -62,7 +61,7 @@ export async function GET(request: Request) {
   } catch {
     return NextResponse.json(
       { error: "Gagal memproses permintaan." },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -75,7 +74,7 @@ export async function POST(request: Request) {
   } catch {
     return NextResponse.json(
       { error: "Permintaan tidak valid." },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -84,7 +83,7 @@ export async function POST(request: Request) {
   if (!normalized.nama_instansi) {
     return NextResponse.json(
       { error: "Nama instansi wajib diisi." },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -94,14 +93,14 @@ export async function POST(request: Request) {
       .from("mitra")
       .insert(normalized)
       .select(
-        "id, nama_instansi, alamat, kota, keterangan, is_aktif, created_at"
+        "id, nama_instansi, alamat, kota, keterangan, is_aktif, created_at",
       )
       .single();
 
     if (error || !data) {
       return NextResponse.json(
         { error: "Gagal menambahkan mitra." },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -109,7 +108,7 @@ export async function POST(request: Request) {
   } catch {
     return NextResponse.json(
       { error: "Gagal menambahkan mitra." },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

@@ -1,16 +1,21 @@
-name: Build & Deploy to Azure App Service
+name: CI / Deploy
 
 on:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  # ---------- TEST JOB (Required Gate) ----------
+  # ---------- UNIT TEST JOB (from your branch) ----------
   test:
     name: Run Unit Tests
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -36,34 +41,86 @@ jobs:
           name: coverage-report
           path: coverage/
 
-  # ---------- BUILD & DEPLOY JOB (only if tests pass) ----------
-  build-and-deploy:
-    name: Build and Deploy Application
+  # ---------- LINT & TYPECHECK JOB (from main) ----------
+  validate:
+    name: Lint & Typecheck
     runs-on: ubuntu-latest
-    needs: test   # This makes the test job a required gate
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: '22'
-          cache: 'npm'
+          node-version: "22"
+          cache: "npm"
+      - run: npm ci
+      - run: npm run validate   # assumes you have a validate script (e.g., next lint && tsc --noEmit)
 
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build Next.js application
+  # ---------- BUILD JOB (depends on both test and validate) ----------
+  build:
+    name: Build
+    needs: [test, validate]   # runs only after both checks pass
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+      - run: npm ci
+      - name: Build
         run: npm run build
         env:
-          NODE_ENV: production
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+      - name: Copy static and public assets
+        run: |
+          cp -r public .next/standalone/public
+          cp -r .next/static .next/standalone/.next/static
+      - name: Zip artifact
+        run: |
+          cd .next/standalone
+          zip -qr ../../release.zip .
+          cd ../..
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release
+          path: release.zip
+          retention-days: 7
 
+  # ---------- DEPLOY TO STAGING ----------
+  deploy-staging:
+    name: Deploy to Staging
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: release
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
-          app-name: ${{ secrets.AZURE_WEBAPP_NAME }}
-          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-          package: .
+          app-name: "pso-c-6-staging"
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_STAGING }}
+          slot-name: "production"
+          package: release.zip
+
+  # ---------- DEPLOY TO PRODUCTION ----------
+  deploy-production:
+    name: Deploy to Production
+    needs: deploy-staging
+    environment: Production
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: release
+      - name: Deploy to Azure Web App
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: "pso-c-6"
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_PRODUCTION }}
+          slot-name: "production"
+          package: release.zip
