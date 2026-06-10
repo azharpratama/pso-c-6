@@ -12,53 +12,75 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # ---------- UNIT TEST JOB (from your branch) ----------
+  test:
+    name: Run Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests with coverage
+        run: npm run test:ci
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage/
+
+  # ---------- LINT & TYPECHECK JOB (from main) ----------
   validate:
     name: Lint & Typecheck
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
           cache: "npm"
-
       - run: npm ci
+      - run: npm run validate   # assumes you have a validate script (e.g., next lint && tsc --noEmit)
 
-      - run: npm run validate
-
+  # ---------- BUILD JOB (depends on both test and validate) ----------
   build:
     name: Build
-    needs: validate
+    needs: [test, validate]   # runs only after both checks pass
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
           cache: "npm"
-
       - run: npm ci
-
       - name: Build
         run: npm run build
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
-
       - name: Copy static and public assets
         run: |
           cp -r public .next/standalone/public
           cp -r .next/static .next/standalone/.next/static
-
       - name: Zip artifact
         run: |
           cd .next/standalone
           zip -qr ../../release.zip .
           cd ../..
-
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
@@ -66,6 +88,7 @@ jobs:
           path: release.zip
           retention-days: 7
 
+  # ---------- DEPLOY TO STAGING ----------
   deploy-staging:
     name: Deploy to Staging
     needs: build
@@ -75,7 +98,6 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: release
-
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
@@ -84,6 +106,7 @@ jobs:
           slot-name: "production"
           package: release.zip
 
+  # ---------- DEPLOY TO PRODUCTION ----------
   deploy-production:
     name: Deploy to Production
     needs: deploy-staging
@@ -94,7 +117,6 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: release
-
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:

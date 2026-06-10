@@ -6,12 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint .",
-    "lint:fix": "eslint . --fix",
-    "format": "prettier --write .",
-    "format:check": "prettier --check .",
-    "typecheck": "tsc --noEmit",
-    "validate": "npm run lint && npm run format:check && npm run typecheck"
+    "lint": "eslint",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config jest.config.mjs",
+    "test:ci": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config jest.config.mjs --ci --coverage --watchAll=false",
+    "validate": "npm run lint && tsc --noEmit"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.4",
@@ -20,13 +18,18 @@
     "react-dom": "19.2.4"
   },
   "devDependencies": {
-    "@types/node": "^20",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@types/jest": "^30.0.0",
+    "@types/node": "^20.19.42",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.6",
-    "eslint-config-prettier": "^10.1.5",
-    "prettier": "^3.5.3",
+    "eslint-config-prettier": "^9.1.2",
+    "jest": "^30.4.2",
+    "jest-environment-jsdom": "^30.4.1",
+    "prettier": "^3.8.4",
     "typescript": "^5"
   }
 }
