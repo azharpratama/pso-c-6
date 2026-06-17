@@ -204,7 +204,7 @@ export default function AnalyticsPage() {
             </div>
           </section>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'reapete(2, 1fr)', gridTemplateColumns: 'minmax(280px, 1fr) 2fr', gap: '20px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(280px, 1fr) 2fr', gap: '20px' }}>
             
             {/* Left Blueprint Card */}
             <div className="table-card" style={{ background: 'var(--primary)', color: 'white', display: 'flex', flexDirection: 'column', padding: '24px', justifyContent: 'space-between', minHeight: '220px' }}>
