@@ -101,6 +101,9 @@ pso-c-6/
 │   ├── app/             # Next.js App Router pages & layouts
 │   │   ├── api/         # API route handlers
 │   │   ├── dashboard/   # Dashboard page
+│   │   ├── partners/    # Partners page
+│   │   ├── settings/    # Settings page
+│   │   ├── analytics/   # Analytics page
 │   │   ├── layout.tsx   # Root layout
 │   │   └── page.tsx     # Login / landing page
 │   ├── components/      # Reusable React components
