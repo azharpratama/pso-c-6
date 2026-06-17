@@ -30,16 +30,6 @@ export default function SettingsPage() {
     password: "",
   });
 
-
-  useEffect(() => {
-    const session = localStorage.getItem("adminSession");
-    if (!session) {
-      router.replace("/");
-      return;
-    }
-    fetchAdmins();
-  }, [router]);
-
   const fetchAdmins = async () => {
     try {
       const res = await fetch("/api/admins");
@@ -60,6 +50,16 @@ export default function SettingsPage() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    const session = localStorage.getItem("adminSession");
+    if (!session) {
+      router.replace("/");
+      return;
+    }
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchAdmins();
+  }, [router]);
 
   const handleNavigation = (path: string) => {
     router.push(path);

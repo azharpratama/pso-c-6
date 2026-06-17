@@ -6,7 +6,6 @@ import {
   BellIcon,
   ChartIcon,
   DownloadIcon,
-  FilterIcon,
   GridIcon,
   SearchIcon,
   SettingsIcon,
@@ -28,11 +27,11 @@ type Mitra = {
 export default function AnalyticsPage() {
   const router = useRouter();
   const [mitras, setMitras] = useState<Mitra[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [_loading, setLoading] = useState(true);
 
   // Default to Jan-Jun 2024 as per image
-  const [startDate, setStartDate] = useState("2024-01-01");
-  const [endDate, setEndDate] = useState("2024-06-30");
+  const [startDate] = useState("2024-01-01");
+  const [endDate] = useState("2024-06-30");
 
   useEffect(() => {
     const session = localStorage.getItem("adminSession");

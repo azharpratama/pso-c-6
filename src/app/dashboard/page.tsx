@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import {
   BellIcon,
   ChartIcon,
-  DownloadIcon,
   GridIcon,
   SearchIcon,
   SettingsIcon,
@@ -42,7 +41,7 @@ type MonthlyGrowth = {
 export default function DashboardPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [_error, setError] = useState("");
   const [stats, setStats] = useState<DashboardStats>({
     totalActive: 0,
     totalPartners: 0,
@@ -146,7 +145,6 @@ export default function DashboardPage() {
 
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadDashboardData();
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     void fetchMonthlyData();
   }, [router, loadDashboardData, fetchMonthlyData]);
 
