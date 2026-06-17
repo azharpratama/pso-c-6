@@ -1,239 +1,213 @@
 "use client";
 
-import type { FormEvent } from "react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   BellIcon,
   ChartIcon,
   DownloadIcon,
-  EditIcon,
-  FilterIcon,
   GridIcon,
   SearchIcon,
   SettingsIcon,
-  TrashIcon,
   UserCircleIcon,
   UsersIcon,
 } from "@/components/icons";
 
-type Mitra = {
-  id: string;
-  nama_instansi: string | null;
-  alamat: string | null;
-  kota: string | null;
-  keterangan: string | null;
-  is_aktif: boolean | null;
-  created_at: string | null;
+type DashboardStats = {
+  totalActive: number;
+  totalPartners: number;
+  newThisMonth: number;
+  activeGrowth: number;
+  newGrowth: number;
 };
 
-type MitraFormData = {
-  nama_instansi: string;
-  alamat: string;
-  kota: string;
-  keterangan: string;
-  is_aktif: boolean;
+type Activity = {
+  id: string;
+  action: string;
+  description: string;
+  timestamp: string;
+  icon: "add" | "edit" | "delete" | "download";
+};
+
+type CityDistribution = {
+  city: string;
+  count: number;
+};
+
+type MonthlyGrowth = {
+  month: string;
+  count: number;
 };
 
 export default function DashboardPage() {
   const router = useRouter();
-  const [mitra, setMitra] = useState<Mitra[]>([]);
-  const [totalCount, setTotalCount] = useState(0);
-  const [activeCount, setActiveCount] = useState(0);
-  const [newCount, setNewCount] = useState(0);
-  const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editing, setEditing] = useState<Mitra | null>(null);
-  const [formData, setFormData] = useState<MitraFormData>({
-    nama_instansi: "",
-    alamat: "",
-    kota: "",
-    keterangan: "",
-    is_aktif: true,
+  const [stats, setStats] = useState<DashboardStats>({
+    totalActive: 0,
+    totalPartners: 0,
+    newThisMonth: 0,
+    activeGrowth: 0,
+    newGrowth: 0,
   });
-  const [saving, setSaving] = useState(false);
-  const [actionError, setActionError] = useState("");
-  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [activities, setActivities] = useState<Activity[]>([]);
+  const [cityData, setCityData] = useState<CityDistribution[]>([]);
+  const [monthlyData, setMonthlyData] = useState<MonthlyGrowth[]>([]);
+  const [selectedPeriod, setSelectedPeriod] = useState<"last6" | "thisYear">(
+    "last6",
+  );
+  const [loadingChart, setLoadingChart] = useState(false);
 
-  const resetForm = useCallback(() => {
-    setFormData({
-      nama_instansi: "",
-      alamat: "",
-      kota: "",
-      keterangan: "",
-      is_aktif: true,
-    });
-    setEditing(null);
-    setActionError("");
-  }, []);
+  // Date is computed once
+  const [currentDate] = useState(() => {
+    const dateOptions: Intl.DateTimeFormatOptions = {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    };
+    return new Date().toLocaleDateString("id-ID", dateOptions);
+  });
 
-  const loadData = useCallback(async () => {
+  // Fetch monthly growth data based on selected period
+  const fetchMonthlyData = useCallback(async () => {
+    setLoadingChart(true);
+    try {
+      const response = await fetch(
+        `/api/mitra/monthly-growth?period=${selectedPeriod}`,
+        { cache: "no-store" },
+      );
+      const result = await response.json();
+      if (response.ok) {
+        setMonthlyData(result?.data ?? []);
+      } else {
+        console.error("Failed to fetch monthly data:", result.error);
+      }
+    } catch {
+      // silently fail
+    } finally {
+      setLoadingChart(false);
+    }
+  }, [selectedPeriod]);
+
+  // Fetch all other dashboard data (stats, cities, activities)
+  const loadDashboardData = useCallback(async () => {
     setLoading(true);
     setError("");
 
     try {
-      const [listResponse, statsResponse] = await Promise.all([
-        fetch("/api/mitra?limit=5", { cache: "no-store" }),
-        fetch("/api/mitra/stats", { cache: "no-store" }),
-      ]);
-
-      const listResult = await listResponse.json();
-
-      if (!listResponse.ok) {
-        setError(listResult?.error ?? "Tidak dapat memuat data mitra.");
-      }
-
-      setMitra(listResult?.data ?? []);
-      setTotalCount(listResult?.count ?? listResult?.data?.length ?? 0);
+      // Fetch stats
+      const statsResponse = await fetch("/api/mitra/stats", {
+        cache: "no-store",
+      });
+      const statsResult = await statsResponse.json();
 
       if (statsResponse.ok) {
-        const statsResult = await statsResponse.json();
-        setActiveCount(statsResult?.active ?? 0);
-        setNewCount(statsResult?.recent ?? 0);
+        setStats({
+          totalActive: statsResult?.active ?? 0,
+          totalPartners: statsResult?.total ?? 0,
+          newThisMonth: statsResult?.recent ?? 0,
+          activeGrowth: statsResult?.activeGrowth ?? 12,
+          newGrowth: statsResult?.newGrowth ?? 3,
+        });
+      }
+
+      // Fetch city distribution
+      const cityResponse = await fetch("/api/mitra/cities", {
+        cache: "no-store",
+      });
+      const cityResult = await cityResponse.json();
+      if (cityResponse.ok) {
+        setCityData(cityResult?.data ?? []);
+      }
+
+      // Fetch recent activities
+      const activityResponse = await fetch("/api/mitra/activities", {
+        cache: "no-store",
+      });
+      const activityResult = await activityResponse.json();
+      if (activityResponse.ok) {
+        setActivities(activityResult?.data ?? []);
       }
     } catch {
-      setError("Tidak dapat terhubung ke database.");
+      setError("Tidak dapat memuat data dashboard.");
     } finally {
       setLoading(false);
     }
   }, []);
 
+  // Initial load
   useEffect(() => {
     const session = localStorage.getItem("adminSession");
     if (!session) {
       router.replace("/");
       return;
     }
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- loadData is async; setState occurs after await, not synchronously
-    void loadData();
-  }, [router, loadData]);
 
-  const filteredMitra = useMemo(() => {
-    const term = searchTerm.trim().toLowerCase();
-    if (!term) {
-      return mitra;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void loadDashboardData();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void fetchMonthlyData();
+  }, [router, loadDashboardData, fetchMonthlyData]);
+
+  // Refetch monthly data when period changes (but skip initial mount)
+  useEffect(() => {
+    if (monthlyData.length > 0 || !loading) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      void fetchMonthlyData();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedPeriod]);
 
-    return mitra.filter((item) => {
-      const values = [
-        item.nama_instansi,
-        item.alamat,
-        item.kota,
-        item.keterangan,
-      ]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase();
-
-      return values.includes(term);
-    });
-  }, [mitra, searchTerm]);
-
-  const visibleEnd = filteredMitra.length;
-  const totalLabel = totalCount || filteredMitra.length;
-  const displayTotal = searchTerm.trim() ? filteredMitra.length : totalLabel;
-
-  const openAddModal = () => {
-    resetForm();
-    setModalOpen(true);
-  };
-
-  const openEditModal = (item: Mitra) => {
-    setEditing(item);
-    setFormData({
-      nama_instansi: item.nama_instansi ?? "",
-      alamat: item.alamat ?? "",
-      kota: item.kota ?? "",
-      keterangan: item.keterangan ?? "",
-      is_aktif: item.is_aktif ?? true,
-    });
-    setActionError("");
-    setModalOpen(true);
-  };
-
-  const closeModal = () => {
-    setModalOpen(false);
-    resetForm();
-  };
-
-  const handleSave = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (saving) {
-      return;
-    }
-
-    if (!formData.nama_instansi.trim()) {
-      setActionError("Nama instansi wajib diisi.");
-      return;
-    }
-
-    setSaving(true);
-    setActionError("");
-
-    try {
-      const response = await fetch(
-        editing ? `/api/mitra/${editing.id}` : "/api/mitra",
-        {
-          method: editing ? "PUT" : "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(formData),
-        },
-      );
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        setActionError(result?.error ?? "Gagal menyimpan data.");
-        return;
-      }
-
-      closeModal();
-      await loadData();
-    } catch {
-      setActionError("Gagal terhubung ke server.");
-    } finally {
-      setSaving(false);
+  const getIconForActivity = (icon: Activity["icon"]) => {
+    switch (icon) {
+      case "add":
+        return "➕";
+      case "edit":
+        return "✏️";
+      case "delete":
+        return "🗑️";
+      case "download":
+        return "⬇️";
+      default:
+        return "📌";
     }
   };
 
-  const handleDelete = async (item: Mitra) => {
-    if (deletingId || saving) {
-      return;
-    }
+  const getMaxCount = () => {
+    if (monthlyData.length === 0) return 1;
+    return Math.max(...monthlyData.map((item) => item.count));
+  };
 
-    const name = item.nama_instansi ?? "mitra ini";
-    const confirmed = window.confirm(`Hapus ${name}?`);
-    if (!confirmed) {
-      return;
-    }
+  const getPeriodLabel = () => {
+    const now = new Date();
+    const monthNames = [
+      "Januari",
+      "Februari",
+      "Maret",
+      "April",
+      "Mei",
+      "Juni",
+      "Juli",
+      "Agustus",
+      "September",
+      "Oktober",
+      "November",
+      "Desember",
+    ];
 
-    setDeletingId(item.id);
-    setError("");
-
-    try {
-      const response = await fetch(`/api/mitra/${item.id}`, {
-        method: "DELETE",
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        setError(result?.error ?? "Gagal menghapus mitra.");
-        return;
-      }
-
-      await loadData();
-    } catch {
-      setError("Gagal terhubung ke server.");
-    } finally {
-      setDeletingId(null);
+    if (selectedPeriod === "last6") {
+      const startMonth = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+      const endMonth = new Date(now.getFullYear(), now.getMonth(), 0);
+      return `${monthNames[startMonth.getMonth()]} ${startMonth.getFullYear()} - ${monthNames[endMonth.getMonth()]} ${endMonth.getFullYear()}`;
+    } else {
+      return `Januari ${now.getFullYear()} - ${monthNames[now.getMonth()]} ${now.getFullYear()}`;
     }
   };
 
   return (
     <div className="dashboard-shell">
+      {/* Sidebar */}
       <aside className="sidebar">
         <div className="sidebar-brand">
           <div className="brand-badge">ITS</div>
@@ -244,38 +218,59 @@ export default function DashboardPage() {
         </div>
 
         <nav className="sidebar-nav">
-          <button className="nav-item" type="button">
+          <button className="nav-item active" type="button">
             <GridIcon className="icon-sm" aria-hidden="true" />
             Dashboard
           </button>
-          <button className="nav-item active" type="button">
+          <button
+            className="nav-item"
+            type="button"
+            onClick={() => router.push("/partners")}
+          >
             <UsersIcon className="icon-sm" aria-hidden="true" />
             Partners
           </button>
-          <button className="nav-item" type="button">
+          <button
+            className="nav-item"
+            type="button"
+            onClick={() => router.push("/analytics")}
+          >
             <ChartIcon className="icon-sm" aria-hidden="true" />
             Analytics
           </button>
-          <button className="nav-item" type="button">
+          <button
+            className="nav-item"
+            type="button"
+            onClick={() => router.push("/settings")}
+          >
             <SettingsIcon className="icon-sm" aria-hidden="true" />
             Settings
           </button>
         </nav>
 
-        <button className="sidebar-cta" type="button" onClick={openAddModal}>
+        <button className="sidebar-cta" type="button">
           + Add New Partner
         </button>
       </aside>
 
+      {/* Main Content */}
       <div className="dashboard-main">
         <div className="top-accent" />
         <header className="dashboard-topbar">
+          <div className="topbar-search">
+            <SearchIcon className="icon-sm" aria-hidden="true" />
+            <input
+              type="text"
+              placeholder="Cari mitra, laporan, atau aktivitas..."
+            />
+          </div>
           <button
             className="topbar-icon"
             type="button"
             aria-label="Notifications"
           >
             <BellIcon className="icon-sm" aria-hidden="true" />
+            <span className="notification-dot" />
           </button>
           <button className="topbar-icon" type="button" aria-label="Profile">
             <UserCircleIcon className="icon-sm" aria-hidden="true" />
@@ -283,132 +278,15 @@ export default function DashboardPage() {
         </header>
 
         <div className="dashboard-content">
-          <section className="page-header">
+          {/* Welcome Banner */}
+          <section className="welcome-banner">
             <div>
-              <h1 className="page-title">Daftar Mitra Magang</h1>
-              <p className="page-subtitle">
-                Kelola daftar instansi mitra magang untuk mahasiswa.
-              </p>
-            </div>
-            <button
-              className="primary-btn"
-              type="button"
-              onClick={openAddModal}
-            >
-              + Tambah Mitra
-            </button>
-          </section>
-
-          <section className="table-card">
-            <div className="table-toolbar">
-              <div className="search-input">
-                <SearchIcon className="icon-sm" aria-hidden="true" />
-                <input
-                  type="text"
-                  placeholder="Cari mitra..."
-                  value={searchTerm}
-                  onChange={(event) => setSearchTerm(event.target.value)}
-                />
-              </div>
-              <button className="filter-btn" type="button">
-                <FilterIcon className="icon-sm" aria-hidden="true" />
-                Filter
-              </button>
-            </div>
-
-            <div className="table-scroll">
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>No</th>
-                    <th>Nama Instansi</th>
-                    <th>Alamat</th>
-                    <th>Kota</th>
-                    <th>Keterangan</th>
-                    <th style={{ textAlign: "right" }}>Aksi</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {loading ? (
-                    <tr>
-                      <td colSpan={6}>Memuat data...</td>
-                    </tr>
-                  ) : error ? (
-                    <tr>
-                      <td colSpan={6}>{error}</td>
-                    </tr>
-                  ) : filteredMitra.length === 0 ? (
-                    <tr>
-                      <td colSpan={6}>Data mitra belum tersedia.</td>
-                    </tr>
-                  ) : (
-                    filteredMitra.map((item, index) => (
-                      <tr key={item.id}>
-                        <td>{index + 1}</td>
-                        <td>{item.nama_instansi ?? "-"}</td>
-                        <td>{item.alamat ?? "-"}</td>
-                        <td>{item.kota ?? "-"}</td>
-                        <td>{item.keterangan ?? "-"}</td>
-                        <td>
-                          <div className="table-actions">
-                            <button
-                              className="action-btn edit"
-                              type="button"
-                              aria-label="Edit"
-                              onClick={() => openEditModal(item)}
-                              disabled={saving || deletingId === item.id}
-                            >
-                              <EditIcon
-                                className="icon-xs"
-                                aria-hidden="true"
-                              />
-                            </button>
-                            <button
-                              className="action-btn delete"
-                              type="button"
-                              aria-label="Delete"
-                              onClick={() => handleDelete(item)}
-                              disabled={deletingId === item.id}
-                            >
-                              <TrashIcon
-                                className="icon-xs"
-                                aria-hidden="true"
-                              />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-
-            <div className="table-footer">
-              <span>
-                Menampilkan {visibleEnd ? 1 : 0} hingga {visibleEnd} dari{" "}
-                {displayTotal} entri
-              </span>
-              <div className="pagination">
-                <button className="page-btn" type="button" data-disabled="true">
-                  {"<"}
-                </button>
-                <button className="page-btn active" type="button">
-                  1
-                </button>
-                <button className="page-btn" type="button" data-disabled="true">
-                  2
-                </button>
-                <button className="page-btn" type="button" data-disabled="true">
-                  3
-                </button>
-                <button className="page-btn" type="button" data-disabled="true">
-                  {">"}
-                </button>
-              </div>
+              <h1 className="welcome-title">Selamat datang, Admin!</h1>
+              <p className="welcome-date">{currentDate}</p>
             </div>
           </section>
 
+          {/* Stats Cards */}
           <section className="summary-grid">
             <div className="stat-card">
               <div className="stat-header">
@@ -417,9 +295,12 @@ export default function DashboardPage() {
                   <UsersIcon className="icon-sm" aria-hidden="true" />
                 </div>
               </div>
-              <div className="stat-value">{activeCount}</div>
-              <div className="stat-change">+12% dari bulan lalu</div>
+              <div className="stat-value">{stats.totalActive}</div>
+              <div className="stat-change positive">
+                +{stats.activeGrowth}% dari bulan lalu
+              </div>
             </div>
+
             <div className="stat-card">
               <div className="stat-header">
                 <div className="stat-title">Mitra Baru (Bulan Ini)</div>
@@ -427,176 +308,151 @@ export default function DashboardPage() {
                   <ChartIcon className="icon-sm" aria-hidden="true" />
                 </div>
               </div>
-              <div className="stat-value">{newCount}</div>
-              <div className="stat-change">+3 dari bulan lalu</div>
-            </div>
-            <div className="export-card">
-              <div className="export-title">Unduh Laporan</div>
-              <div className="export-text">
-                Export data mitra dalam format Excel atau PDF untuk pelaporan.
+              <div className="stat-value">{stats.newThisMonth}</div>
+              <div className="stat-change positive">
+                +{stats.newGrowth} dari bulan lalu
               </div>
-              <button
-                className="secondary-btn"
-                type="button"
-                disabled
-                data-disabled="true"
-              >
-                <DownloadIcon className="icon-sm" aria-hidden="true" />
-                Export Data
+            </div>
+
+            <div className="stat-card">
+              <div className="stat-header">
+                <div className="stat-title">Total Mitra Keseluruhan</div>
+                <div className="stat-icon">
+                  <UsersIcon className="icon-sm" aria-hidden="true" />
+                </div>
+              </div>
+              <div className="stat-value">{stats.totalPartners}</div>
+              <div className="stat-change">termasuk mitra non-aktif</div>
+            </div>
+          </section>
+
+          {/* Charts & Cities Grid */}
+          <section className="charts-grid">
+            {/* Monthly Growth Chart */}
+            <div className="chart-card">
+              <div className="chart-header">
+                <h3 className="chart-title">Grafik Pertumbuhan Mitra</h3>
+                <select
+                  className="chart-select"
+                  value={selectedPeriod}
+                  onChange={(e) =>
+                    setSelectedPeriod(e.target.value as "last6" | "thisYear")
+                  }
+                >
+                  <option value="last6">6 Bulan Terakhir</option>
+                  <option value="thisYear">Tahun Ini</option>
+                </select>
+              </div>
+              <div className="chart-container">
+                {loadingChart ? (
+                  <div className="chart-placeholder">Memuat data...</div>
+                ) : monthlyData.length === 0 ? (
+                  <div className="chart-placeholder">Belum ada data mitra</div>
+                ) : (
+                  monthlyData.map((item, index) => {
+                    const max = getMaxCount();
+                    const height = max > 0 ? (item.count / max) * 100 : 0;
+                    const isHighest = item.count === max && max > 0;
+                    return (
+                      <div key={index} className="chart-bar-group">
+                        <div
+                          className={`chart-bar ${isHighest ? "highest" : ""}`}
+                          style={{ height: `${height}%` }}
+                          title={`${item.month}: ${item.count} mitra`}
+                        />
+                        <span className="chart-label">{item.month}</span>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+              <div className="chart-footer">
+                <span className="chart-period">{getPeriodLabel()}</span>
+              </div>
+            </div>
+
+            {/* City Distribution */}
+            <div className="city-card">
+              <h3 className="chart-title">Distribusi Kota</h3>
+              <div className="city-list">
+                {loading ? (
+                  <div>Memuat data...</div>
+                ) : cityData.length === 0 ? (
+                  <div>Belum ada data kota</div>
+                ) : (
+                  cityData.map((item, index) => {
+                    const max = Math.max(...cityData.map((c) => c.count));
+                    const width = max > 0 ? (item.count / max) * 100 : 0;
+                    return (
+                      <div key={index} className="city-item">
+                        <div className="city-row">
+                          <span className="city-name">{item.city}</span>
+                          <span className="city-count">{item.count} Mitra</span>
+                        </div>
+                        <div className="city-bar-bg">
+                          <div
+                            className="city-bar"
+                            style={{ width: `${width}%` }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+              <button className="city-view-all">Lihat semua kota →</button>
+            </div>
+          </section>
+
+          {/* Recent Activity Feed */}
+          <section className="activity-card">
+            <div className="activity-header">
+              <h3 className="chart-title">Aktivitas Terbaru</h3>
+              <button className="activity-more" type="button">
+                ⋮
+              </button>
+            </div>
+            <div className="activity-list">
+              {loading ? (
+                <div className="activity-item">Memuat aktivitas...</div>
+              ) : activities.length === 0 ? (
+                <div className="activity-item">Belum ada aktivitas.</div>
+              ) : (
+                activities.map((item) => (
+                  <div key={item.id} className="activity-item">
+                    <div className="activity-icon">
+                      {getIconForActivity(item.icon)}
+                    </div>
+                    <div className="activity-content">
+                      <p className="activity-text">
+                        <span className="activity-user">Admin</span>{" "}
+                        {item.description}
+                      </p>
+                      <p className="activity-time">{item.timestamp}</p>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+            <div className="activity-footer">
+              <button className="activity-load-more" type="button">
+                Muat Aktivitas Lainnya
               </button>
             </div>
           </section>
 
-          {modalOpen ? (
-            <div className="modal-backdrop" role="dialog" aria-modal="true">
-              <div className="modal-card">
-                <div className="modal-header">
-                  <div>
-                    <h2 className="modal-title">
-                      {editing ? "Edit Mitra" : "Tambah Mitra"}
-                    </h2>
-                    <p className="modal-subtitle">
-                      Lengkapi data instansi mitra magang.
-                    </p>
-                  </div>
-                  <button
-                    className="close-btn"
-                    type="button"
-                    onClick={closeModal}
-                    aria-label="Close"
-                  >
-                    x
-                  </button>
-                </div>
-
-                <form className="modal-form" onSubmit={handleSave}>
-                  <div className="field-group">
-                    <label className="form-label" htmlFor="nama_instansi">
-                      Nama Instansi
-                    </label>
-                    <div className="input-field">
-                      <input
-                        id="nama_instansi"
-                        type="text"
-                        placeholder="Nama instansi"
-                        value={formData.nama_instansi}
-                        onChange={(event) =>
-                          setFormData((prev) => ({
-                            ...prev,
-                            nama_instansi: event.target.value,
-                          }))
-                        }
-                      />
-                    </div>
-                  </div>
-
-                  <div className="field-group">
-                    <label className="form-label" htmlFor="alamat">
-                      Alamat
-                    </label>
-                    <div className="input-field">
-                      <input
-                        id="alamat"
-                        type="text"
-                        placeholder="Alamat instansi"
-                        value={formData.alamat}
-                        onChange={(event) =>
-                          setFormData((prev) => ({
-                            ...prev,
-                            alamat: event.target.value,
-                          }))
-                        }
-                      />
-                    </div>
-                  </div>
-
-                  <div className="field-row">
-                    <div className="field-group">
-                      <label className="form-label" htmlFor="kota">
-                        Kota
-                      </label>
-                      <div className="input-field">
-                        <input
-                          id="kota"
-                          type="text"
-                          placeholder="Kota"
-                          value={formData.kota}
-                          onChange={(event) =>
-                            setFormData((prev) => ({
-                              ...prev,
-                              kota: event.target.value,
-                            }))
-                          }
-                        />
-                      </div>
-                    </div>
-
-                    <div className="field-group">
-                      <label className="form-label" htmlFor="status">
-                        Status
-                      </label>
-                      <div className="input-field">
-                        <select
-                          id="status"
-                          value={formData.is_aktif ? "active" : "inactive"}
-                          onChange={(event) =>
-                            setFormData((prev) => ({
-                              ...prev,
-                              is_aktif: event.target.value === "active",
-                            }))
-                          }
-                        >
-                          <option value="active">Aktif</option>
-                          <option value="inactive">Nonaktif</option>
-                        </select>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="field-group">
-                    <label className="form-label" htmlFor="keterangan">
-                      Keterangan
-                    </label>
-                    <div className="input-field">
-                      <textarea
-                        id="keterangan"
-                        placeholder="Keterangan singkat"
-                        value={formData.keterangan}
-                        onChange={(event) =>
-                          setFormData((prev) => ({
-                            ...prev,
-                            keterangan: event.target.value,
-                          }))
-                        }
-                      />
-                    </div>
-                  </div>
-
-                  {actionError ? (
-                    <p className="form-error">{actionError}</p>
-                  ) : null}
-
-                  <div className="modal-actions">
-                    <button
-                      className="ghost-btn"
-                      type="button"
-                      onClick={closeModal}
-                      disabled={saving}
-                    >
-                      Batal
-                    </button>
-                    <button
-                      className="primary-btn"
-                      type="submit"
-                      disabled={saving}
-                    >
-                      {saving ? "Menyimpan..." : "Simpan"}
-                    </button>
-                  </div>
-                </form>
-              </div>
+          {/* Footer */}
+          <footer className="dashboard-footer">
+            <p>
+              © 2023 Institut Teknologi Sepuluh Nopember - Internship Management
+              System
+            </p>
+            <div className="footer-links">
+              <a href="#">Kebijakan Privasi</a>
+              <a href="#">Ketentuan Layanan</a>
+              <a href="#">Bantuan</a>
             </div>
-          ) : null}
+          </footer>
         </div>
       </div>
     </div>
