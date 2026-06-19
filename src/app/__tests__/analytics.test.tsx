@@ -63,6 +63,7 @@ describe("AnalyticsPage Component", () => {
   });
 
   it("handles fetch failure by showing fallback/mock data", async () => {
+    const consoleSpy = jest.spyOn(console, "error").mockImplementation(() => {});
     global.fetch = jest.fn(() => Promise.reject("Fetch error")) as jest.Mock;
 
     await act(async () => {
@@ -78,5 +79,7 @@ describe("AnalyticsPage Component", () => {
       expect(screen.getByText("Bandung")).toBeInTheDocument();
       expect(screen.getByText("Malang")).toBeInTheDocument();
     });
+    
+    consoleSpy.mockRestore();
   });
 });
