@@ -1,19 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabaseServer";
-
-type AdminPayload = {
-  username?: string;
-  email?: string;
-  password?: string;
-};
-
-function normalizePayload(payload: AdminPayload) {
-  return {
-    username: payload.username?.trim() || null,
-    email: payload.email?.trim() || null,
-    password: payload.password?.trim() || null,
-  };
-}
+import type { AdminPayload } from "@/lib/types";
+import { normalizeAdminPayload } from "@/lib/normalize";
 
 export async function PUT(
   request: NextRequest,
@@ -35,7 +23,7 @@ export async function PUT(
     return NextResponse.json({ error: "ID tidak valid." }, { status: 400 });
   }
 
-  const normalized = normalizePayload(payload ?? {});
+  const normalized = normalizeAdminPayload(payload ?? {});
 
   if (!normalized.username) {
     return NextResponse.json(

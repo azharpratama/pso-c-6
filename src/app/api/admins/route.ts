@@ -1,19 +1,7 @@
 import { NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabaseServer";
-
-type AdminPayload = {
-  username?: string;
-  email?: string;
-  password?: string;
-};
-
-function normalizePayload(payload: AdminPayload) {
-  return {
-    username: payload.username?.trim() || null,
-    email: payload.email?.trim() || null,
-    password: payload.password?.trim() || null,
-  };
-}
+import type { AdminPayload } from "@/lib/types";
+import { normalizeAdminPayload } from "@/lib/normalize";
 
 export async function GET() {
   try {
@@ -51,7 +39,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const normalized = normalizePayload(payload ?? {});
+  const normalized = normalizeAdminPayload(payload ?? {});
 
   if (!normalized.username) {
     return NextResponse.json(

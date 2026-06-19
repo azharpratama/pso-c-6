@@ -1310,3 +1310,392 @@ button:disabled,
     max-width: 24px;
   }
 }
+
+/* ===== ANALYTICS PAGE ===== */
+.analytics-two-col {
+  display: grid;
+  grid-template-columns: minmax(280px, 1fr) 2fr;
+  gap: 20px;
+}
+
+.blueprint-card {
+  background: var(--primary);
+  color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  padding: 24px;
+  justify-content: space-between;
+  min-height: 220px;
+}
+
+.blueprint-heading {
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.blueprint-subtext {
+  margin-top: 8px;
+  color: #abc3ee;
+  font-size: 13px;
+}
+
+.blueprint-detail-btn {
+  background: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.analytics-chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 32px;
+}
+
+.analytics-chart-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--primary-strong);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.analytics-legend {
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #6b7a95;
+  font-weight: 600;
+}
+
+.legend-dot {
+  width: 8px;
+  height: 8px;
+  background: var(--primary);
+  border-radius: 50%;
+}
+
+.analytics-bar-container {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  flex: 1;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #eef2f8;
+  position: relative;
+}
+
+.analytics-bar-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.analytics-bar {
+  width: 100%;
+  max-width: 40px;
+  border-radius: 4px 4px 0 0;
+  min-height: 8px;
+  transition: height 0.3s ease;
+}
+
+.analytics-bar.muted {
+  background: #eef2f8;
+}
+
+.analytics-bar.active {
+  background: var(--primary);
+}
+
+.analytics-bar-label {
+  font-size: 11px;
+  color: #6b7a95;
+  position: absolute;
+  bottom: -20px;
+}
+
+/* Pie / donut chart */
+.pie-card-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #2a3550;
+  margin-bottom: 24px;
+}
+
+.pie-wrapper {
+  display: flex;
+  justify-content: center;
+  margin: 20px 0;
+}
+
+.pie-ring {
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pie-center {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.pie-percent {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--primary);
+  line-height: 1;
+}
+
+.pie-label {
+  font-size: 10px;
+  color: #6b7a95;
+  font-style: italic;
+}
+
+.pie-legend-row {
+  display: flex;
+  justify-content: space-between;
+  background: #f5f7fb;
+  padding: 12px;
+  border-radius: 10px;
+}
+
+.pie-legend-row + .pie-legend-row {
+  margin-top: 8px;
+}
+
+.pie-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.pie-legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.pie-legend-value {
+  font-weight: 700;
+  font-size: 12px;
+}
+
+/* Horizontal bar chart */
+.hbar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.hbar-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #2a3550;
+}
+
+.hbar-link {
+  font-size: 11px;
+  color: #6b7a95;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.hbar-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.hbar-label-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  font-weight: 600;
+  color: #2a3550;
+  margin-bottom: 8px;
+}
+
+.hbar-track {
+  width: 100%;
+  background: #eef2f8;
+  height: 8px;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.hbar-fill {
+  height: 100%;
+  border-radius: 4px;
+}
+
+.hbar-fill.primary {
+  background: var(--primary);
+}
+
+.hbar-fill.secondary {
+  background: #739cff;
+}
+
+/* Export logs */
+.export-logs-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--line);
+}
+
+.export-logs-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #2a3550;
+}
+
+.export-logs-btn {
+  border: 1px solid var(--line);
+  background: transparent;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  color: #2a3550;
+  cursor: pointer;
+}
+
+.export-table-cell {
+  padding: 16px 24px;
+  font-size: 12px;
+  color: #2a3550;
+  font-weight: 500;
+}
+
+.export-table-header {
+  padding: 16px 24px;
+  color: #6b7a95;
+  font-size: 12px;
+}
+
+.format-badge {
+  font-size: 10px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-weight: 700;
+}
+
+.export-filename {
+  color: #6b7a95;
+  font-style: italic;
+}
+
+.export-download-btn {
+  cursor: pointer;
+  color: #2b6cb0;
+}
+
+.export-pagination {
+  padding: 16px 24px;
+  display: flex;
+  justify-content: center;
+  background: #ffffff;
+}
+
+/* Date range picker */
+.date-range-picker {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--line);
+  background: #ffffff;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-size: 13px;
+  color: #54637f;
+  font-weight: 600;
+}
+
+.date-range-input {
+  width: 75px;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font-weight: 700;
+}
+
+/* ===== SETTINGS PAGE ===== */
+.admin-name-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.admin-badge {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--primary);
+  color: #ffffff;
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.loading-state {
+  text-align: center;
+  padding: 48px 24px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.input-field-solo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: #f7f9fd;
+  color: #4f5f7a;
+  font-family: inherit;
+  width: 100%;
+}
+
+.input-field-solo:focus {
+  outline: none;
+  border-color: var(--primary);
+  background: #ffffff;
+}
+
+@media (max-width: 860px) {
+  .analytics-two-col {
+    grid-template-columns: 1fr;
+  }
+}
+

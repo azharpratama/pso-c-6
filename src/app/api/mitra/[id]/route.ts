@@ -1,23 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabaseServer";
-
-type MitraPayload = {
-  nama_instansi?: string;
-  alamat?: string;
-  kota?: string;
-  keterangan?: string;
-  is_aktif?: boolean;
-};
-
-function normalizePayload(payload: MitraPayload) {
-  return {
-    nama_instansi: payload.nama_instansi?.trim() || null,
-    alamat: payload.alamat?.trim() || null,
-    kota: payload.kota?.trim() || null,
-    keterangan: payload.keterangan?.trim() || null,
-    is_aktif: payload.is_aktif ?? true,
-  };
-}
+import type { MitraPayload } from "@/lib/types";
+import { normalizeMitraPayload } from "@/lib/normalize";
 
 export async function PUT(
   request: NextRequest,
@@ -39,7 +23,7 @@ export async function PUT(
     return NextResponse.json({ error: "ID tidak valid." }, { status: 400 });
   }
 
-  const normalized = normalizePayload(payload ?? {});
+  const normalized = normalizeMitraPayload(payload ?? {});
 
   if (!normalized.nama_instansi) {
     return NextResponse.json(
